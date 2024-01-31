@@ -1,0 +1,50 @@
+-SELECT 'MRN|Last_Name|First_Name|Middle_Name|Last_Update_Date|Home_Phone|Address1|Address2|City|State|Zip|Email|Expired_Ind|DOB|Expired_Date|Sex|Ethnicity|Marital_Status|Race|Religion|Language|SSN|Prior_Last_Name|Next_of_Kin'
+
+
+SELECT DISTINCT RTRIM(LTRIM(IsNULL(a.[MRN],'') ) )   as [MRN]              
+      , '|' + RTRIM( a.[LastName])                   as [Last_Name]       
+      , '|' + RTRIM( a.[FirstName])                  as [First_Name]  
+      , '|' + IsNULL(RTRIM(a.[MiddleName]),'')       as [Middle_Name]     
+	  , '|' +
+	    CASE WHEN substring(a.[Last_Update_Date], 1, 4) > '2023' THEN '' 
+             ELSE substring(a.[Last_Update_Date], 1, 8)  
+             END                                     as [Last_Update_Date]   
+	  , '|' + CASE WHEN IsNULL(a.[Phone],'') IN ('0', '00000000') THEN '' ELSE REPLACE(IsNULL(a.[Phone],''), '-','') END as [Home_Phone] 
+	  , '|' + IsNULL(RTRIM(a.[Street Address 1]),'') as [Address1]        
+	  , '|' + IsNULL(RTRIM(a.[Street Address 2]),'') as [Address2]        
+	  , '|' + IsNULL(RTRIM(a.[City]),'')             as [City]             
+      , '|' + IsNULL(RTRIM(a.[State]),'') +  '|'     as [State]            
+      , CASE WHEN IsNULL(a.[ZIP],'') IN ('', '0') THEN '' ELSE LTRIM(RTRIM(a.[ZIP])) END  as [ZIP]  
+	  , '|' + IsNULL(a.[Email],'')                   as [Email]             
+	  , '|' + '' +   '|'                             as [Expired_Ind]       
+	  , REPLACE(IsNULL(a.[DOB],''),'/','')           as [DOB]              
+      , '|' + IsNULL(a.[Date_of_death],'')           as [Expired_Date]     
+      , '|' + IsNULL(sx.[Epic_Value] , '')           as [Sex]                
+  	  , '|' + IsNULL(eg.[Epic_Value] , '')           as [Ethnicity]         
+      , '|' + IsNULL(mar.[Epic_Value] , '')          as [Marital_Status]    
+      , '|' + IsNULL(rac.[Epic_Value] , '')          as [Race]            
+	  , '|' + IsNULL(a.[Religion],'')                as [Religion]        
+	  , '|' + IsNULL(lan.[Epic_Value] , '')          as [Language]         
+      , '|' + IsNULL(replace (a.[SSN],'-',''),'')    as [SSN]              
+      , '|' + IsNULL(a.[Patient_Previous_Name],'')   as [Prior_Last_Name]   
+      , '|' + IsNULL(a.[Next_of_Kin_Emergency_Contact],'') + '^' + IsNULL(rls.[Epic_Value] , '')   + '^^^^^^^' 
+      + REPLACE(IsNULL(a.[Next_of_Kin_Emergency_Phone],''), '-','')    as [Next_of_Kin]  
+  FROM [CA_Healdsburg].[dbo].[CA_Healdsburg_eCW_ScannedImages_20231121_MPI_Incremental_1] a    
+           LEFT OUTER JOIN
+       [CA_Healdsburg].[dbo].[CA_Healdsburg_eCW_Ethnic_Group]      eg  ON IsNULL(a.[Ethnic_Group],'')     = eg.[Source_Value]   
+           LEFT OUTER JOIN
+       [CA_Healdsburg].[dbo].[CA_Healdsburg_eCW_Marital_Status]    mar ON IsNULL(a.[Marital_Status],'')   = mar.[Source_Value] 
+           LEFT OUTER JOIN  
+       [CA_Healdsburg].[dbo].[CA_Healdsburg_eCW_Primary_Language]  lan ON IsNULL(a.[Primary_Language],'') = lan.[Source_Value]  
+           LEFT OUTER JOIN
+       [CA_Healdsburg].[dbo].[CA_Healdsburg_eCW_Race]              rac ON IsNULL(a.[Race],'')             = rac.[Source_Value] 
+           LEFT OUTER JOIN  
+       [CA_Healdsburg].[dbo].[CA_Healdsburg_eCW_NOK_Relationship]  rls ON IsNULL(a.[Next_of_Kin_Emergency_Relationship],'') = rls.[Source_Value]   
+           LEFT OUTER JOIN 
+       [CA_Healdsburg].[dbo].[CA_Healdsburg_eCW_Sex]               sx  ON IsNULL(a.[Sex],'')              = sx.[Source_Value] 
+ WHERE (LTRIM(IsNULL(a.[MRN],'') )  > '' )
+   AND (LTRIM(IsNULL(a.[MRN],'') )  NOT IN (select [MRN] from [CA_Healdsburg].[dbo].[CA_Healdsburg_eCW_MPI_Exclusion]
+                                             where [MRN] is not NULL) )  
+   AND (LTRIM(IsNULL(a.[MRN],'') )  NOT IN (select [MRN] from [CA_Healdsburg].[dbo].[CA_Healdsburg_eCW_ScannedImages_20231104_MPI_Initial] ) )
+ ORDER BY RTRIM(LTRIM(IsNULL(a.[MRN],'') ) )
+ 
